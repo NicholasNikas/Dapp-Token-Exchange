@@ -1,9 +1,6 @@
 const { expect } = require('chai')
 const { ethers } = require('hardhat')
-
-const tokens = (n) => {
-  return ethers.utils.parseUnits(n.toString(), 'ether')
-}
+const { tokens } = require('../src/TokensConverter.js')
 
 describe('Token', () => {
   let token, accounts, deployer, receiver, exchange
