@@ -7,9 +7,11 @@ import {
   loadAccount,
   loadTokens,
   loadExchange,
+  subscribeToEvents,
 } from '../store/interactions'
 import Navbar from './Navbar.js'
 import Markets from './Markets.js'
+import Balance from './Balance.js'
 
 function App() {
   const dispatch = useDispatch()
@@ -26,10 +28,16 @@ function App() {
       await loadAccount(provider, dispatch)
     })
 
-    const { DApp, mETH, exchange } = config[chainId]
+    const { DApp, mETH, exchange: exchangeConfig } = config[chainId]
     await loadTokens(provider, [DApp.address, mETH.address], dispatch)
 
-    await loadExchange(provider, exchange.address, dispatch)
+    const exchange = await loadExchange(
+      provider,
+      exchangeConfig.address,
+      dispatch
+    )
+
+    subscribeToEvents(exchange, dispatch)
   }
 
   useEffect(() => {
@@ -44,7 +52,7 @@ function App() {
         <section className='exchange__section--left grid'>
           <Markets />
 
-          {/* Balance */}
+          <Balance />
 
           {/* Order */}
         </section>
