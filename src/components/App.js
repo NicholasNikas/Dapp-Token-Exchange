@@ -8,11 +8,13 @@ import {
   loadTokens,
   loadExchange,
   subscribeToEvents,
+  loadAllOrders,
 } from '../store/interactions'
 import Navbar from './Navbar.js'
 import Markets from './Markets.js'
 import Balance from './Balance.js'
 import Order from './Order.js'
+import OrderBook from './OrderBook.js'
 
 function App() {
   const dispatch = useDispatch()
@@ -37,6 +39,8 @@ function App() {
       exchangeConfig.address,
       dispatch
     )
+
+    loadAllOrders(provider, exchange, dispatch)
 
     subscribeToEvents(exchange, dispatch)
   }
@@ -64,7 +68,7 @@ function App() {
 
           {/* Trades */}
 
-          {/* OrderBook */}
+          <OrderBook />
         </section>
       </main>
 
