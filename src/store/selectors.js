@@ -1,5 +1,5 @@
 import { createSelector } from 'reselect'
-import { get, groupBy, reject } from 'lodash'
+import { get, groupBy, reject, maxBy, minBy } from 'lodash'
 import { ethers } from 'ethers'
 import moment from 'moment'
 
@@ -49,8 +49,8 @@ const decorateOrder = (order, tokens) => {
     token0Amount: ethers.utils.formatUnits(token0Amount, 'ether'),
     token1Amount: ethers.utils.formatUnits(token1Amount, 'ether'),
     tokenPrice: Math.round((token1Amount / token0Amount) * 100000) / 100000,
-    formattedTimeStamp: moment
-      .unix(order.timeStamp)
+    formattedTimestamp: moment
+      .unix(order.timestamp)
       .format('h:mm:ssa dddd MMM D YYYY'),
   }
 }
@@ -114,4 +114,69 @@ const decorateOrderBookOrder = (order, tokens) => {
     orderTypeClass: orderType === 'buy' ? GREEN : RED,
     orderFillAction: orderType === 'buy' ? 'sell' : 'buy',
   }
+}
+
+export const priceChartSelector = createSelector(
+  filledOrders,
+  tokens,
+  (orders, tokens) => {
+    if (!tokens[0] || !tokens[1]) {
+      return
+    }
+
+    orders = orders.filter(
+      (order) =>
+        order.tokenGet === tokens[0].address ||
+        order.tokenGet === tokens[1].address
+    )
+    orders = orders.filter(
+      (order) =>
+        order.tokenGive === tokens[0].address ||
+        order.tokenGive === tokens[1].address
+    )
+
+    orders = orders.sort(
+      (order1, order2) => order1.timestamp - order2.timestamp
+    )
+
+    orders = orders.map((order) => decorateOrder(order, tokens))
+
+    let lastOrder, secondLastOrder
+    ;[secondLastOrder, lastOrder] = orders.slice(-2)
+
+    const lastPrice = get(lastOrder, 'tokenPrice', 0)
+    const secondLastPrice = get(secondLastOrder, 'tokenPrice', 0)
+
+    return {
+      lastPrice,
+      lastPriceChange: lastPrice >= secondLastPrice ? '+' : '-',
+      series: [
+        {
+          data: buildGraphData(orders),
+        },
+      ],
+    }
+  }
+)
+
+const buildGraphData = (orders) => {
+  orders = groupBy(orders, (order) =>
+    moment.unix(order.timestamp).startOf('hour').format()
+  )
+
+  const hours = Object.keys(orders)
+  const graphData = hours.map((hour) => {
+    const group = orders[hour]
+    const open = group[0]
+    const high = maxBy(group, 'tokenPrice')
+    const low = minBy(group, 'tokenPrice')
+    const close = group[group.length - 1]
+
+    return {
+      x: new Date(hour),
+      y: [open.tokenPrice, high.tokenPrice, low.tokenPrice, close.tokenPrice],
+    }
+  })
+
+  return graphData
 }
