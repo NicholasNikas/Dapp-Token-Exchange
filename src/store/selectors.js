@@ -51,7 +51,70 @@ const decorateOrder = (order, tokens) => {
     tokenPrice: Math.round((token1Amount / token0Amount) * 100000) / 100000,
     formattedTimestamp: moment
       .unix(order.timestamp)
-      .format('h:mm:ssa dddd MMM D YYYY'),
+      .format('h:mm:ssa d MMM D YYYY'),
+  }
+}
+
+export const filledOrderSelector = createSelector(
+  filledOrders,
+  tokens,
+  (orders, tokens) => {
+    if (!tokens[0] || !tokens[1]) {
+      return
+    }
+
+    orders = orders.filter(
+      (order) =>
+        order.tokenGet === tokens[0].address ||
+        order.tokenGet === tokens[1].address
+    )
+    orders = orders.filter(
+      (order) =>
+        order.tokenGive === tokens[0].address ||
+        order.tokenGive === tokens[1].address
+    )
+
+    orders = orders.sort(
+      (order1, order2) => order1.timestamp - order2.timestamp
+    )
+
+    orders = decorateFilledOrders(orders, tokens)
+
+    orders = orders.sort(
+      (order1, order2) => order2.timestamp - order1.timestamp
+    )
+
+    return orders
+  }
+)
+
+const decorateFilledOrders = (orders, tokens) => {
+  let previousOrder = orders[0]
+
+  return orders.map((order) => {
+    order = decorateOrder(order, tokens)
+    order = decorateFilledOrder(order, previousOrder)
+    previousOrder = order
+    return order
+  })
+}
+
+const decorateFilledOrder = (order, previousOrder) => {
+  return {
+    ...order,
+    tokenPriceClass: tokenPriceClass(order.tokenPrice, order.id, previousOrder),
+  }
+}
+
+const tokenPriceClass = (tokenPrice, orderId, previousOrder) => {
+  if (previousOrder.id === orderId) {
+    return GREEN
+  }
+
+  if (previousOrder.tokenPrice <= tokenPrice) {
+    return GREEN
+  } else {
+    return RED
   }
 }
 
