@@ -170,6 +170,66 @@ const tokenPriceClass = (tokenPrice, orderId, previousOrder) => {
   }
 }
 
+export const myFilledOrdersSelector = createSelector(
+  account,
+  tokens,
+  filledOrders,
+  (account, tokens, orders) => {
+    if (!tokens[0] || !tokens[1]) {
+      return
+    }
+
+    orders = orders.filter(
+      (order) => order.user === account || order.creator === account
+    )
+
+    orders = orders.filter(
+      (order) =>
+        order.tokenGet === tokens[0].address ||
+        order.tokenGet === tokens[1].address
+    )
+    orders = orders.filter(
+      (order) =>
+        order.tokenGive === tokens[0].address ||
+        order.tokenGive === tokens[1].address
+    )
+
+    orders = orders.sort(
+      (order1, order2) => order2.timestamp - order1.timestamp
+    )
+
+    orders = decorateMyFilledOrders(orders, account, tokens)
+
+    return orders
+  }
+)
+
+const decorateMyFilledOrders = (orders, account, tokens) => {
+  return orders.map((order) => {
+    order = decorateOrder(order, tokens)
+    order = decorateMyFilledOrder(order, account, tokens)
+    return order
+  })
+}
+
+const decorateMyFilledOrder = (order, account, tokens) => {
+  const myOrder = order.creator === account
+
+  let orderType
+  if (myOrder) {
+    orderType = order.tokenGive === tokens[1].address ? 'buy' : 'sell'
+  } else {
+    orderType = order.tokenGive === tokens[1].address ? 'sell' : 'buy'
+  }
+
+  return {
+    ...order,
+    orderType,
+    orderClass: orderType === 'buy' ? GREEN : RED,
+    orderSign: orderType === 'buy' ? '+' : '-',
+  }
+}
+
 export const orderBookSelector = createSelector(
   openOrders,
   tokens,
