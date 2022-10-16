@@ -12,6 +12,8 @@ const account = (state) => get(state, 'provider.account')
 
 const allOrders = (state) => get(state, 'exchange.allOrders.data', [])
 
+const events = (state) => get(state, 'exchange.events')
+
 const cancelledOrders = (state) =>
   get(state, 'exchange.cancelledOrders.data', [])
 const filledOrders = (state) => get(state, 'exchange.filledOrders.data', [])
@@ -33,6 +35,15 @@ const openOrders = (state) => {
 
   return openOrders
 }
+
+export const myEventsSelector = createSelector(
+  account,
+  events,
+  (account, events) => {
+    events = events.filter((event) => event.args.user === account)
+    return events
+  }
+)
 
 export const myOpenOrdersSelector = createSelector(
   account,
