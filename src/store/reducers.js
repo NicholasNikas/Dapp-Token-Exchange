@@ -267,7 +267,7 @@ export const exchange = (
 
     case 'NEW_ORDER_SUCCESS':
       index = state.allOrders.data.findIndex(
-        (order) => order.id.toString() === action.orderId.toString()
+        (order) => order.id.toString() === action.order.id.toString()
       )
 
       if (index === -1) {
